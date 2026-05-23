@@ -1,0 +1,2793 @@
+package com.example.ui
+
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import android.app.DatePickerDialog
+import java.util.Calendar
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.data.DebtCalculator
+import com.example.data.DebtRelation
+import com.example.data.DebtSettlementEntity
+import com.example.data.OutingEntity
+import com.example.data.ParticipantEntity
+import com.example.ui.theme.BackgroundLight
+import com.example.ui.theme.BrandPrimary
+import com.example.ui.theme.BrandPrimaryGradientEnd
+import com.example.ui.theme.BrandSecondary
+import com.example.ui.theme.BrandSecondaryContainer
+import com.example.ui.theme.OutlineGrey
+import com.example.ui.theme.SemanticGreen
+import com.example.ui.theme.SemanticRed
+import com.example.ui.theme.SurfaceLowest
+import com.example.ui.theme.TextPrimary
+import com.example.ui.theme.TextSecondary
+import kotlin.math.abs
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HangBillApp(viewModel: HangBillViewModel) {
+    val currentScreen by viewModel.currentScreen.collectAsState()
+
+    // Enforce RTL Layout Direction for complete Arabic experience
+    CompositionLocalProvider(
+        LocalLayoutDirection provides LayoutDirection.Rtl,
+        LocalMinimumInteractiveComponentSize provides 48.dp
+    ) {
+        val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+        Scaffold(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundLight),
+            bottomBar = {
+                // Ensure standard navigation bar is only displayed in primary hub views,
+                // and hidden inside edit form to have full canvas focus.
+                if (currentScreen != Screen.AddOuting && currentScreen !is Screen.EditOuting) {
+                    BottomNavigationBar(activeScreen = currentScreen, onTabSelect = { target ->
+                        viewModel.navigateTo(target)
+                    })
+                }
+            },
+            contentWindowInsets = WindowInsets(0.dp)
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = statusBarPadding,
+                        bottom = if (currentScreen == Screen.AddOuting || currentScreen is Screen.EditOuting) 0.dp else innerPadding.calculateBottomPadding()
+                    )
+                    .background(BackgroundLight)
+            ) {
+                when (val screen = currentScreen) {
+                    is Screen.Dashboard -> DashboardScreen(viewModel)
+                    is Screen.OutingsList -> OutingsListScreen(viewModel)
+                    is Screen.OutingDetail -> OutingDetailScreen(viewModel, screen.outingId)
+                    is Screen.AddOuting -> AddEditOutingScreen(viewModel, null)
+                    is Screen.EditOuting -> AddEditOutingScreen(viewModel, screen.outingId)
+                    is Screen.DebtsList -> DebtsScreen(viewModel)
+                    is Screen.StatsReports -> StatsReportsScreen(viewModel)
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// MAIN LAYOUT BOTTOM BAR
+// -------------------------------------------------------------
+@Composable
+fun BottomNavigationBar(activeScreen: Screen, onTabSelect: (Screen) -> Unit) {
+    val brandGradient = Brush.linearGradient(
+        colors = listOf(BrandPrimary, BrandPrimaryGradientEnd)
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                clip = false,
+                ambientColor = BrandPrimary.copy(alpha = 0.2f),
+                spotColor = BrandPrimary.copy(alpha = 0.3f)
+            )
+            .background(
+                color = SurfaceLowest,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            )
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(72.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // tab 1: Dashboard
+            NavBarItem(
+                title = "الرئيسية",
+                icon = Icons.Default.Home,
+                isActive = activeScreen is Screen.Dashboard,
+                onClick = { onTabSelect(Screen.Dashboard) },
+                modifier = Modifier.testTag("nav_dashboard")
+            )
+
+            // tab 2: Outings
+            NavBarItem(
+                title = "الطلعات",
+                icon = Icons.Default.Groups,
+                isActive = activeScreen is Screen.OutingsList || activeScreen is Screen.OutingDetail,
+                onClick = { onTabSelect(Screen.OutingsList) },
+                modifier = Modifier.testTag("nav_outings")
+            )
+
+            // Centre FAB - Wrapped in weight Box for perfect center spacing
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(brandGradient)
+                        .clickable { onTabSelect(Screen.AddOuting) }
+                        .testTag("nav_add_outing_fab"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "طلعة جديدة",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+
+            // tab 3: Debts
+            NavBarItem(
+                title = "الديون",
+                icon = Icons.Default.ReceiptLong,
+                isActive = activeScreen is Screen.DebtsList,
+                onClick = { onTabSelect(Screen.DebtsList) },
+                modifier = Modifier.testTag("nav_debts")
+            )
+
+            // tab 4: Stats
+            NavBarItem(
+                title = "الإحصائيات",
+                icon = Icons.Default.Leaderboard,
+                isActive = activeScreen is Screen.StatsReports,
+                onClick = { onTabSelect(Screen.StatsReports) },
+                modifier = Modifier.testTag("nav_stats")
+            )
+        }
+    }
+}
+
+@Composable
+fun RowScope.NavBarItem(title: String, icon: ImageVector, isActive: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .weight(1f)
+            .clickable(onClick = onClick)
+            .fillMaxHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = if (isActive) BrandPrimary else TextSecondary,
+            modifier = Modifier.size(if (isActive) 26.dp else 22.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = title,
+            fontSize = 11.sp,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+            color = if (isActive) BrandPrimary else TextSecondary
+        )
+    }
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 1: DASHBOARD (HOMEPAGE)
+// -------------------------------------------------------------
+@Composable
+fun DashboardScreen(viewModel: HangBillViewModel) {
+    val context = LocalContext.current
+    val outingsList by viewModel.outings.collectAsState()
+    val rawDebts by viewModel.globalActiveDebts.collectAsState()
+    val totalDebt = rawDebts.sumOf { it.amount }
+
+    val upcomingList by viewModel.upcomingOutings.collectAsState()
+
+    var showAddUpcomingDialog by remember { mutableStateOf(false) }
+    var upcomingTitle by remember { mutableStateOf("") }
+    var upcomingDate by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())) }
+    var upcomingPlans by remember { mutableStateOf("") }
+    var upcomingCostStr by remember { mutableStateOf("") }
+    var upcomingParticipants by remember { mutableStateOf("") }
+
+    // Aggregate monthly spending (current month)
+    val totalThisMonth = remember(outingsList) {
+        // Mocking: simple filter
+        outingsList.sumOf {
+            val isCurrentMatch = it.date.contains("2026-05") || it.date.contains("14 أكتوبر") || it.date.contains("12 أكتوبر")
+            if (isCurrentMatch) 850.0 else 184.0 // approximate distribution
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // App Header
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Analytics,
+                        contentDescription = "HangBill Icon",
+                        tint = BrandPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "HangBill",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary
+                    )
+                }
+            }
+        }
+
+        // Top Corporate Dynamic Card
+        item {
+            val brandGradient = Brush.linearGradient(
+                colors = listOf(BrandPrimary, BrandPrimaryGradientEnd)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .shadow(12.dp, RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(brandGradient)
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "إجمالي المصروفات هذا الشهر",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Text(
+                            text = String.format(Locale.US, "%,.0f", totalThisMonth),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "جنيه",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Substats Group Row
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Outstanding debts card
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(96.dp)
+                        .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    onClick = { viewModel.navigateTo(Screen.DebtsList) }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "الديون القائمة",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${String.format(Locale.US, "%,.0f", totalDebt)} ج.م",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (totalDebt > 0) SemanticRed else SemanticGreen
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (totalDebt > 0) "ديون معلقة ⚠️" else "جميع الحسابات متزنة ✨",
+                            fontSize = 9.sp,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                // Count of outings card
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(96.dp)
+                        .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    onClick = { viewModel.navigateTo(Screen.OutingsList) }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "إجمالي الطلعات",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${outingsList.size} طلعة",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandSecondary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "سجل الأصدقاء كامل 🤩",
+                            fontSize = 9.sp,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+        }
+
+        // Section header
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "آخر الطلعات النشطة",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "عرض الكل",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = BrandPrimary,
+                    modifier = Modifier.clickable { viewModel.navigateTo(Screen.OutingsList) }
+                )
+            }
+        }
+
+        // Latest 3 Outings Stack
+        val latestThree = outingsList.take(3)
+        if (latestThree.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(SurfaceLowest, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "لا توجد طلعات مسجلة حتى الآن.\nاضغط على '+' لإضافة طلعة أولى!",
+                        textAlign = TextAlign.Center,
+                        color = TextSecondary
+                    )
+                }
+            }
+        } else {
+            items(latestThree) { outing ->
+                OutingCardItem(outing = outing, onClick = {
+                    viewModel.navigateTo(Screen.OutingDetail(outing.id))
+                })
+            }
+        }
+
+        // Upcoming Outings Section
+        item {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🔮 طلعات قادمة ومستقبلية",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandPrimary
+                )
+                
+                Button(
+                    onClick = { showAddUpcomingDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary.copy(alpha = 0.12f), contentColor = BrandPrimary),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "أضف", modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "إضافة خطة", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        if (upcomingList.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .background(SurfaceLowest, RoundedCornerShape(20.dp))
+                        .border(1.dp, OutlineGrey.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "لا توجد طلعات مستقبلية مخططة بعد.",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "خطط لطلعة قادمة واكتب مخططاتكم والميزانية والمشاركين مبكراً! ✨",
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center,
+                            color = TextSecondary.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+        } else {
+            items(upcomingList) { upcoming ->
+                UpcomingOutingCard(
+                    upcoming = upcoming,
+                    onDelete = {
+                        viewModel.deleteUpcomingOuting(upcoming.id)
+                    }
+                )
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "© 2026 HangBill. All rights reserved.",
+                    fontSize = 11.sp,
+                    color = TextSecondary.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "صنع بكل حب بواسطة ",
+                        fontSize = 11.sp,
+                        color = TextSecondary.copy(alpha = 0.5f)
+                    )
+                    Text(
+                        text = "mohab_rihani",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+    }
+
+    if (showAddUpcomingDialog) {
+        val dialogCalendar = Calendar.getInstance()
+        val dYear = dialogCalendar.get(Calendar.YEAR)
+        val dMonth = dialogCalendar.get(Calendar.MONTH)
+        val dDay = dialogCalendar.get(Calendar.DAY_OF_MONTH)
+        
+        val dialogDatePicker = remember {
+            DatePickerDialog(
+                context,
+                { _, sYear, sMonth, sDay ->
+                    val formattedMonth = String.format(Locale.US, "%02d", sMonth + 1)
+                    val formattedDay = String.format(Locale.US, "%02d", sDay)
+                    upcomingDate = "$sYear-$formattedMonth-$formattedDay"
+                },
+                dYear, dMonth, dDay
+            )
+        }
+
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showAddUpcomingDialog = false }
+        ) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .shadow(16.dp, RoundedCornerShape(24.dp))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🔮 إضافة طلعة مستقبلية جديدة",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandPrimary
+                        )
+                        IconButton(onClick = { showAddUpcomingDialog = false }) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "إغلاق", tint = TextSecondary)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Title Input
+                    Text(text = "اسم الطلعة", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    OutlinedTextField(
+                        value = upcomingTitle,
+                        onValueChange = { upcomingTitle = it },
+                        placeholder = { Text("مثلاً: رحلة الساحل الشمالي", fontSize = 13.sp, color = TextSecondary.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandPrimary,
+                            unfocusedBorderColor = OutlineGrey
+                        ),
+                        singleLine = true
+                    )
+
+                    // Date Input with Clickable Date Picker
+                    Text(text = "تاريخ الطلعة", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { dialogDatePicker.show() }
+                    ) {
+                        OutlinedTextField(
+                            value = upcomingDate,
+                            onValueChange = {},
+                            readOnly = true,
+                            enabled = false,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            trailingIcon = {
+                                Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "تاريخ", tint = BrandPrimary)
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledTextColor = TextPrimary,
+                                disabledBorderColor = OutlineGrey,
+                                disabledPlaceholderColor = TextSecondary.copy(alpha = 0.5f),
+                                disabledTrailingIconColor = BrandPrimary
+                            ),
+                            singleLine = true
+                        )
+                    }
+
+                    // Plans Input
+                    Text(text = "مخططات لهذه الطلعة", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    OutlinedTextField(
+                        value = upcomingPlans,
+                        onValueChange = { upcomingPlans = it },
+                        placeholder = { Text("مثلاً: البحر، الغداء بالقرية، السهر بالليل", fontSize = 13.sp, color = TextSecondary.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandPrimary,
+                            unfocusedBorderColor = OutlineGrey
+                        ),
+                        maxLines = 3
+                    )
+
+                    // Approximate Cost Input
+                    Text(text = "التكلفة التقريبية (ج.م)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    OutlinedTextField(
+                        value = upcomingCostStr,
+                        onValueChange = { text ->
+                            upcomingCostStr = text.filter { it.isDigit() }
+                        },
+                        placeholder = { Text("0", fontSize = 13.sp, color = TextSecondary.copy(alpha = 0.5f)) },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandPrimary,
+                            unfocusedBorderColor = OutlineGrey
+                        ),
+                        singleLine = true
+                    )
+
+                    // Participants Input
+                    Text(text = "من هم الأشخاص الذين سنطلع معهم؟", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    OutlinedTextField(
+                        value = upcomingParticipants,
+                        onValueChange = { upcomingParticipants = it },
+                        placeholder = { Text("مثلاً: أحمد، سارة، عبدالعزيز، شادي", fontSize = 13.sp, color = TextSecondary.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BrandPrimary,
+                            unfocusedBorderColor = OutlineGrey
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.saveUpcomingOuting(
+                                    title = upcomingTitle,
+                                    date = upcomingDate,
+                                    plans = upcomingPlans,
+                                    approxCost = upcomingCostStr.toDoubleOrNull() ?: 0.0,
+                                    participants = upcomingParticipants
+                                )
+                                // Reset fields
+                                upcomingTitle = ""
+                                upcomingDate = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                                upcomingPlans = ""
+                                upcomingCostStr = ""
+                                upcomingParticipants = ""
+                                showAddUpcomingDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary)
+                        ) {
+                            Text(text = "حفظ المخطط", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = { showAddUpcomingDialog = false },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray.copy(alpha = 0.2f), contentColor = TextPrimary)
+                        ) {
+                            Text(text = "إلغاء", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Outing List item card representing each entry visually beautifully
+@Composable
+fun OutingCardItem(outing: OutingEntity, onClick: () -> Unit) {
+    val categoryEmoji = when (outing.type) {
+        "مطعم" -> "🍽️"
+        "كافيه" -> "☕"
+        "مولات" -> "🛍️"
+        "سفر" -> "✈️"
+        "ترفيه" -> "🎮"
+        "اخرى", "غيره" -> "📦"
+        else -> "📦"
+    }
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Category Icon background circular frame
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(BrandPrimary.copy(alpha = 0.08f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = categoryEmoji, fontSize = 24.sp)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = outing.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = outing.date,
+                    fontSize = 12.sp,
+                    color = TextSecondary
+                )
+                if (outing.note.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = outing.note,
+                        fontSize = 11.sp,
+                        color = TextSecondary.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = BrandPrimary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = outing.type,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "تعديل",
+                    tint = BrandPrimary.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun UpcomingOutingCard(
+    upcoming: com.example.data.UpcomingOutingEntity,
+    onDelete: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(20.dp))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = upcoming.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandPrimary
+                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "حذف المخطط",
+                        tint = SemanticRed.copy(alpha = 0.8f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "📅 ${upcoming.date}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "💰 الميزانية: ${String.format(Locale.US, "%,.0f", upcoming.approxCost)} ج.م",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandSecondary
+                )
+            }
+            
+            if (upcoming.plans.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.02f), RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ReceiptLong,
+                        contentDescription = "المخطط",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "📝 المخطط: " + upcoming.plans,
+                        fontSize = 12.sp,
+                        color = TextPrimary
+                    )
+                }
+            }
+            
+            if (upcoming.participants.isNotBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.02f), RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Groups,
+                        contentDescription = "الأشخاص",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "👥 مع: " + upcoming.participants,
+                        fontSize = 12.sp,
+                        color = TextPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 2: ALL OUTINGS LIST SCREEN (وَصْل)
+// -------------------------------------------------------------
+@Composable
+fun OutingsListScreen(viewModel: HangBillViewModel) {
+    val searchVal by viewModel.searchQuery.collectAsState()
+    val activeCat by viewModel.selectedCategory.collectAsState()
+    val listOutings by viewModel.filteredOutings.collectAsState()
+
+    val categories = listOf("الكل", "مطعم", "كافيه", "مولات", "سفر", "ترفيه", "اخرى")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Large Arabic Header
+        Text(
+            text = "سجل الطلعات المشتركة",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = BrandPrimary
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Stylized RTL Search field with high-energy focus styling
+        TextField(
+            value = searchVal,
+            onValueChange = { viewModel.searchQuery.value = it },
+            placeholder = { Text("ابحث عن طلعة...", color = TextSecondary.copy(alpha = 0.6f)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(2.dp, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .testTag("outings_search_field"),
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "بحث",
+                    tint = BrandPrimary
+                )
+            },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = SurfaceLowest,
+                unfocusedContainerColor = SurfaceLowest,
+                disabledContainerColor = SurfaceLowest,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Horizontal Category Filter chips
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(categories) { cat ->
+                val isActive = activeCat == cat
+                val brandGradient = Brush.linearGradient(
+                    colors = listOf(BrandPrimary, BrandPrimaryGradientEnd)
+                )
+                Box(
+                    modifier = Modifier
+                        .shadow(if (isActive) 4.dp else 1.dp, RoundedCornerShape(50.dp))
+                        .background(
+                            brush = if (isActive) brandGradient else Brush.linearGradient(
+                                listOf(
+                                    SurfaceLowest,
+                                    SurfaceLowest
+                                )
+                            ),
+                            shape = RoundedCornerShape(50.dp)
+                        )
+                        .clickable { viewModel.selectedCategory.value = cat }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag("category_chip_$cat")
+                ) {
+                    Text(
+                        text = cat,
+                        fontSize = 12.sp,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isActive) Color.White else TextPrimary
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Outing Cards List Scroll View
+        if (listOutings.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "لا توجد نتائج تطابق بحثك... 🔍",
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(listOutings) { outing ->
+                    OutingCardItem(outing = outing, onClick = {
+                        viewModel.navigateTo(Screen.OutingDetail(outing.id))
+                    })
+                }
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+    }
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 3: OUTING DETAILS PAGE (عشاء الخميس)
+// -------------------------------------------------------------
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun OutingDetailScreen(viewModel: HangBillViewModel, outingId: Int) {
+    val outingsList by viewModel.outings.collectAsState()
+    val outing = outingsList.find { it.id == outingId }
+
+    if (outing == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("الطلعة غير موجودة أو تم حذفها.")
+        }
+        return
+    }
+
+    val participants by remember(outingId) { viewModel.getParticipantsForOuting(outingId) }.collectAsState(initial = emptyList())
+    val settlements by remember(outingId) { viewModel.getSettlementsForOuting(outingId) }.collectAsState(initial = emptyList())
+
+    val totalCost = participants.sumOf { it.spendAmount }
+    val totalPaid = participants.sumOf { it.paidAmount }
+    val totalRemaining = outliersRemaining(totalCost, totalPaid)
+
+    // Dynamic debts simplification calculation for this specific outing
+    val debts = remember(participants, settlements) {
+        DebtCalculator.calculateDebts(
+            outingId = outingId,
+            participants = participants,
+            settlements = settlements
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // App bar inside detail
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { viewModel.navigateBack() }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "عودة"
+                    )
+                }
+
+                Text(
+                    text = outing.title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+
+                Row {
+                    IconButton(onClick = { viewModel.navigateTo(Screen.EditOuting(outingId)) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "تعديل",
+                            tint = BrandSecondary
+                        )
+                    }
+                    IconButton(onClick = { viewModel.deleteOuting(outingId) }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "حذف",
+                            tint = SemanticRed
+                        )
+                    }
+                }
+            }
+        }
+
+        // Info chips row
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .background(BrandPrimary.copy(alpha = 0.08f), RoundedCornerShape(50.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = "التاريخ",
+                        tint = BrandPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = outing.date, fontSize = 11.sp, color = BrandPrimary, fontWeight = FontWeight.Bold)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .background(BrandSecondary.copy(alpha = 0.08f), RoundedCornerShape(50.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🏷️ ${outing.type}", fontSize = 11.sp, color = BrandSecondary, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        // Outing Summary Financial statistics Card
+        item {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(24.dp))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "إجمالي مصروفات الطلعة",
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${String.format(Locale.US, "%,.0f", totalCost)} جنيه",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(OutlineGrey.copy(alpha = 0.5f))
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "تم جمعه / دفعه", fontSize = 11.sp, color = TextSecondary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${String.format(Locale.US, "%,.0f", totalPaid)} جنيه",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SemanticGreen
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(32.dp)
+                                .background(OutlineGrey.copy(alpha = 0.5f))
+                        )
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "المتبقي غير المدفوع", fontSize = 11.sp, color = TextSecondary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${String.format(Locale.US, "%,.0f", totalRemaining)} جنيه",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (totalRemaining > 0) SemanticRed else SemanticGreen
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Note Card optionally
+        if (outing.note.isNotBlank()) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = BrandPrimary.copy(alpha = 0.03f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = "✏️ ملاحظات الطلعة:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandPrimary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = outing.note, fontSize = 12.sp, color = TextSecondary)
+                    }
+                }
+            }
+        }
+
+        // Participant status header
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "المشاركون (${participants.size})",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
+        }
+
+        // Participant individual cards showing progress bars
+        items(participants) { member ->
+            val shareText = "صرفه: ${member.spendAmount} ج.م"
+            val collectedText = "دفع: ${member.paidAmount} ج.m"
+            val progressVal = if (member.spendAmount > 0) (member.paidAmount / member.spendAmount).toFloat().coerceIn(0f, 1f) else 1f
+
+            val remains = member.spendAmount - member.paidAmount
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(2.dp, RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(BrandSecondary.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = member.name.take(1).uppercase(Locale.getDefault()),
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandSecondary,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = member.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
+                        }
+
+                        Text(
+                            text = "${member.spendAmount} جنيه",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = BrandPrimary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    LinearProgressIndicator(
+                        progress = { progressVal },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = if (progressVal >= 1f) SemanticGreen else BrandPrimary,
+                        trackColor = OutlineGrey.copy(alpha = 0.3f),
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "تم دفع ${String.format(Locale.US, "%.0f", member.paidAmount)} جنيه", fontSize = 11.sp, color = TextSecondary)
+                        Text(
+                            text = if (remains <= 0) "خالص ✅" else "متبقي: ${String.format(Locale.US, "%.0f", remains)} جنيه",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (remains <= 0) SemanticGreen else SemanticRed
+                        )
+                    }
+                }
+            }
+        }
+
+        // Smart Debts Settlements block
+        item {
+            Text(
+                text = "تسوية الحساب للطلعة",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        }
+
+        if (debts.isEmpty() || debts.all { it.isSettled }) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SemanticGreen.copy(alpha = 0.05f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "تم تصفير جميع ديون هذه الطلعة! 🎉\nالحسابات متزنة بالكامل بين الأصدقاء.",
+                            textAlign = TextAlign.Center,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SemanticGreen
+                        )
+                    }
+                }
+            }
+        } else {
+            items(debts) { debt ->
+                if (!debt.isSettled) {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = BrandPrimary.copy(alpha = 0.03f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(1.dp, RoundedCornerShape(20.dp))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = debt.fromUser,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "⬅️ يدفع لـ", fontSize = 11.sp, color = TextSecondary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = debt.toUser,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = TextPrimary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${String.format(Locale.US, "%,.0f", debt.amount)} جنيه",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = BrandPrimary
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    viewModel.settleDebt(
+                                        outingId = outingId,
+                                        fromUser = debt.fromUser,
+                                        toUser = debt.toUser,
+                                        amount = debt.amount
+                                    )
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SemanticGreen),
+                                modifier = Modifier.testTag("settle_button_${debt.fromUser}_${debt.toUser}")
+                            ) {
+                                Text(text = "تم الدفع", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+private fun outliersRemaining(totalCost: Double, totalPaid: Double): Double {
+    val diff = totalCost - totalPaid
+    return if (diff > 0) diff else 0.0
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 4: ADD AND EDIT OUTING SCREEN Form
+// -------------------------------------------------------------
+class FormParticipant(
+    name: String,
+    spendAmount: Double,
+    paidAmount: Double
+) {
+    var name by mutableStateOf(name)
+    var spendAmount by mutableStateOf(spendAmount)
+    var paidAmount by mutableStateOf(paidAmount)
+    val items = mutableStateListOf<Pair<String, Double>>()
+}
+
+@Composable
+fun AddEditOutingScreen(viewModel: HangBillViewModel, outingId: Int?) {
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val month = calendar.get(Calendar.MONTH)
+    val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+    val outingsList by viewModel.outings.collectAsState()
+    val isEdit = outingId != null
+    val outingToEdit = if (isEdit) outingsList.find { it.id == outingId } else null
+
+    var title by remember { mutableStateOf(outingToEdit?.title ?: "") }
+    var date by remember { mutableStateOf(outingToEdit?.date ?: SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())) }
+
+    val datePickerDialog = remember {
+        DatePickerDialog(
+            context,
+            { _, selYear, selMonth, selDay ->
+                val formattedMonth = String.format(Locale.US, "%02d", selMonth + 1)
+                val formattedDay = String.format(Locale.US, "%02d", selDay)
+                date = "$selYear-$formattedMonth-$formattedDay"
+            },
+            year, month, day
+        )
+    }
+
+    var type by remember { mutableStateOf(outingToEdit?.type ?: "مطعم") }
+    var note by remember { mutableStateOf(outingToEdit?.note ?: "") }
+    var splitEqually by remember { mutableStateOf(outingToEdit?.splitEqually ?: true) }
+
+    // Represent participants as local state list
+    val dbParticipants by remember(outingId) { viewModel.getParticipantsForOuting(outingId ?: -1) }.collectAsState(initial = emptyList())
+
+    val localParticipants = remember { mutableStateListOf<FormParticipant>() }
+
+    // Init local form lists
+    var initialized by remember { mutableStateOf(false) }
+    if (!initialized) {
+        if (isEdit && outingToEdit != null) {
+            localParticipants.clear()
+            dbParticipants.forEach {
+                localParticipants.add(FormParticipant(it.name, it.spendAmount, it.paidAmount))
+            }
+            if (localParticipants.isNotEmpty()) {
+                initialized = true
+            }
+        } else {
+            // Default first empty participant card for adding mode
+            localParticipants.add(FormParticipant("", 0.0, 0.0))
+            initialized = true
+        }
+    }
+
+    val categories = listOf("مطعم", "كافيه", "مولات", "سفر", "ترفيه", "اخرى")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()
+    ) {
+        // App Header Inside Add edit Page
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (isEdit) "تعديل الطلعة" else "إضافة طلعة جديدة",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = BrandPrimary
+            )
+            IconButton(onClick = { viewModel.navigateBack() }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "إغلاق"
+                )
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Outing Title field
+            item {
+                Text(text = "اسم الطلعة", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = { Text("مثلاً: عشاء الويكند", color = TextSecondary.copy(alpha = 0.5f)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_title"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BrandPrimary,
+                        unfocusedBorderColor = OutlineGrey
+                    ),
+                    singleLine = true
+                )
+            }
+
+            // Date picker fake/text field
+            item {
+                Text(text = "التاريخ", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { datePickerDialog.show() }
+                ) {
+                    OutlinedTextField(
+                        value = date,
+                        onValueChange = {},
+                        placeholder = { Text("yyyy-MM-dd", color = TextSecondary.copy(alpha = 0.5f)) },
+                        readOnly = true,
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("input_date"),
+                        shape = RoundedCornerShape(16.dp),
+                        trailingIcon = {
+                            Icon(imageVector = Icons.Default.CalendarToday, contentDescription = "تاريخ", tint = BrandPrimary)
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = TextPrimary,
+                            disabledBorderColor = OutlineGrey,
+                            disabledPlaceholderColor = TextSecondary.copy(alpha = 0.5f),
+                            disabledTrailingIconColor = BrandPrimary
+                        ),
+                        singleLine = true
+                    )
+                }
+            }
+
+            // Category tag list chips selecting type
+            item {
+                Text(text = "نوع الطلعة", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { cat ->
+                        val isSelected = type == cat
+                        val catEmoji = when (cat) {
+                            "مطعم" -> "🍽️"
+                            "كافيه" -> "☕"
+                            "مولات" -> "🛍️"
+                            "سفر" -> "✈️"
+                            "ترفيه" -> "🎮"
+                            "اخرى" -> "📦"
+                            else -> "📦"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (isSelected) BrandPrimary else SurfaceLowest,
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .clickable { type = cat }
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .shadow(if (isSelected) 4.dp else 0.dp, RoundedCornerShape(50.dp))
+                                .testTag("type_chip_$cat")
+                        ) {
+                            Text(
+                                text = "$catEmoji $cat",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else TextPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Split equally vs detail switch toggler row
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(1.dp, RoundedCornerShape(16.dp))
+                        .background(SurfaceLowest, RoundedCornerShape(16.dp))
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "تقسيم الحساب بالتساوي", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "سيتم تقسيم الفاتورة الإجمالية بالتساوي على الجميع", fontSize = 11.sp, color = TextSecondary)
+                    }
+                    Button(
+                        onClick = { splitEqually = !splitEqually },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (splitEqually) BrandPrimary else OutlineGrey
+                        ),
+                        shape = RoundedCornerShape(50.dp)
+                    ) {
+                        Text(text = if (splitEqually) "مفعّل" else "ملغي", fontSize = 11.sp, color = Color.White)
+                    }
+                }
+            }
+
+            // Form participants listings
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "المشاركون (المجموع: ${localParticipants.size})",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+            }
+
+            // Display listing for each participant
+            items(localParticipants.size) { index ->
+                val member = localParticipants[index]
+                var pName by remember(member.name) { mutableStateOf(member.name) }
+                var pSpend by remember(member.spendAmount) { 
+                    mutableStateOf(
+                        if (member.spendAmount == 0.0) "" else String.format(Locale.US, "%.0f", member.spendAmount)
+                    ) 
+                }
+                var pPaid by remember(member.paidAmount) { 
+                    mutableStateOf(
+                        if (member.paidAmount == 0.0) "" else String.format(Locale.US, "%.0f", member.paidAmount)
+                    ) 
+                }
+
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(2.dp, RoundedCornerShape(20.dp))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // Header row with Person name and Delete action
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(BrandPrimary.copy(alpha = 0.08f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(imageVector = Icons.Default.Person, contentDescription = "شخص", tint = BrandPrimary)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                OutlinedTextField(
+                                    value = pName,
+                                    onValueChange = {
+                                        pName = it
+                                        member.name = it
+                                    },
+                                    placeholder = { Text("اسم المشارك", fontSize = 13.sp) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("part_name_$index"),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = BrandPrimary,
+                                        unfocusedBorderColor = OutlineGrey
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+
+                            if (localParticipants.size > 1) {
+                                IconButton(onClick = {
+                                    localParticipants.removeAt(index)
+                                }) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "حذف شخص", tint = SemanticRed)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Spend and Paid numeric grids
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Spend field is editable ONLY if splitEqually is false
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (splitEqually) "صرفه (يُحسب بالتساوي)" else "صرفه (عليه) ج.م",
+                                    fontSize = 11.sp,
+                                    color = TextSecondary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = if (splitEqually) "تلقائي" else pSpend,
+                                    onValueChange = { text ->
+                                        val filtered = text.filter { it.isDigit() }
+                                        pSpend = filtered
+                                        val d = filtered.toDoubleOrNull() ?: 0.0
+                                        member.spendAmount = d
+                                    },
+                                    enabled = !splitEqually,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("part_spend_$index"),
+                                    placeholder = { Text("0") },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = BrandPrimary,
+                                        unfocusedBorderColor = OutlineGrey,
+                                        disabledTextColor = TextSecondary.copy(alpha = 0.6f)
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+
+                            // Paid amount column
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = "اللي جابه (دفع) ج.م", fontSize = 11.sp, color = TextSecondary)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = pPaid,
+                                    onValueChange = { text ->
+                                        val filtered = text.filter { it.isDigit() }
+                                        pPaid = filtered
+                                        val d = filtered.toDoubleOrNull() ?: 0.0
+                                        member.paidAmount = d
+                                    },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("part_paid_$index"),
+                                    placeholder = { Text("0") },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = BrandPrimary,
+                                        unfocusedBorderColor = OutlineGrey
+                                    ),
+                                    singleLine = true
+                                )
+                            }
+                        }
+
+                        // Add item checklist for items purchased
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black.copy(alpha = 0.02f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = "🛒 تفاصيل وسجل مشتريات الشخص (تُجمع في خانة الصرف):",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandPrimary
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            member.items.forEachIndexed { itemIndex, item ->
+                                var itemName by remember(item.first) { mutableStateOf(item.first) }
+                                var itemCostStr by remember(item.second) { 
+                                    mutableStateOf(
+                                        if (item.second == 0.0) "" else String.format(Locale.US, "%.0f", item.second)
+                                    ) 
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = itemName,
+                                        onValueChange = {
+                                            itemName = it
+                                            member.items[itemIndex] = it to (itemCostStr.toDoubleOrNull() ?: 0.0)
+                                            if (!splitEqually) {
+                                                member.spendAmount = member.items.sumOf { it.second }
+                                            }
+                                        },
+                                        placeholder = { Text("ماذا اشترى بالطلعة", fontSize = 11.sp) },
+                                        modifier = Modifier.weight(1.5f),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = BrandPrimary,
+                                            unfocusedBorderColor = OutlineGrey
+                                        ),
+                                        singleLine = true
+                                    )
+
+                                    OutlinedTextField(
+                                        value = itemCostStr,
+                                        onValueChange = { text ->
+                                            val filtered = text.filter { it.isDigit() }
+                                            itemCostStr = filtered
+                                            val cost = filtered.toDoubleOrNull() ?: 0.0
+                                            member.items[itemIndex] = itemName to cost
+                                            if (!splitEqually) {
+                                                member.spendAmount = member.items.sumOf { it.second }
+                                            }
+                                        },
+                                        placeholder = { Text("ثمنها", fontSize = 11.sp) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        modifier = Modifier.weight(1f),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = BrandPrimary,
+                                            unfocusedBorderColor = OutlineGrey
+                                        ),
+                                        singleLine = true
+                                    )
+
+                                    IconButton(
+                                        onClick = {
+                                            member.items.removeAt(itemIndex)
+                                            if (!splitEqually) {
+                                                member.spendAmount = member.items.sumOf { it.second }
+                                            }
+                                        },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "حذف",
+                                            tint = SemanticRed,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        member.items.add("" to 0.0)
+                                    }
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "أضف سلعة",
+                                            modifier = Modifier.size(16.dp),
+                                            tint = BrandPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(text = "إضافة سلعة جديدة", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandPrimary)
+                                    }
+                                }
+
+                                if (member.items.isNotEmpty()) {
+                                    Text(
+                                        text = "المجموع: ${String.format(Locale.US, "%.0f", member.items.sumOf { it.second })} ج.م",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BrandPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Dashed add another person trigger button
+            item {
+                Button(
+                    onClick = {
+                        localParticipants.add(FormParticipant("", 0.0, 0.0))
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .drawBehind {
+                            drawRoundRect(
+                                color = BrandPrimary.copy(alpha = 0.4f),
+                                style = Stroke(
+                                    width = 2.dp.toPx(),
+                                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
+                                        floatArrayOf(15f, 15f),
+                                        0f
+                                    )
+                                )
+                            )
+                        }
+                        .testTag("add_part_button"),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = "أضف", tint = BrandPrimary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "أضف شخص آخر والشلة", color = BrandPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
+
+            // Note field optionally
+            item {
+                Text(text = "ملاحظات وتفاصيل إضافية (اختياري)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    placeholder = { Text("مثلاً: غداء بمناسبة زيارة الرياض...", color = TextSecondary.copy(alpha = 0.5f)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .testTag("input_notes"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BrandPrimary,
+                        unfocusedBorderColor = OutlineGrey
+                    ),
+                    maxLines = 3
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        // Bottom Fixed CTA Save button framed in glass gradient look
+        val brandGradient = Brush.linearGradient(
+            colors = listOf(BrandPrimary, BrandPrimaryGradientEnd)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(SurfaceLowest)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(16.dp)
+        ) {
+            Button(
+                onClick = {
+                    viewModel.saveOuting(
+                        id = outingToEdit?.id ?: 0,
+                        title = title,
+                        date = date,
+                        type = type,
+                        note = note,
+                        splitEqually = splitEqually,
+                        participants = localParticipants.map { it.name to (it.spendAmount to it.paidAmount) }
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brandGradient)
+                    .testTag("save_outing_button"),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent)
+            ) {
+                Text(
+                    text = if (isEdit) "حفظ التعديلات" else "حفظ الطلعة",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 5: ALL DEBTS & SETTLEMENTS LIST (الديون)
+// -------------------------------------------------------------
+@Composable
+fun DebtsScreen(viewModel: HangBillViewModel) {
+    val activeDebts by viewModel.globalActiveDebts.collectAsState()
+    val settledDebts by viewModel.globalSettledDebts.collectAsState()
+
+    var activeTabIsPending by remember { mutableStateOf(true) }
+
+    val currentDebtsList = if (activeTabIsPending) activeDebts else settledDebts
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Large Arabic Header
+        Text(
+            text = "تسويات الديون والقروض البينية",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = BrandPrimary
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "إجمالي التحويلات المتبقية: ${String.format(Locale.US, "%,.0f", activeDebts.sumOf { it.amount })} جنيه",
+            fontSize = 13.sp,
+            color = TextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Segmented Control toggler pills
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(OutlineGrey.copy(alpha = 0.2f), RoundedCornerShape(24.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(
+                        color = if (activeTabIsPending) SurfaceLowest else Color.Transparent,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .clickable { activeTabIsPending = true }
+                    .testTag("tab_pending_debts"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "ديون قائمة (${activeDebts.size})",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = if (activeTabIsPending) BrandPrimary else TextSecondary
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(
+                        color = if (!activeTabIsPending) SurfaceLowest else Color.Transparent,
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .clickable { activeTabIsPending = false }
+                    .testTag("tab_settled_debts"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "ديون مسوّاة (${settledDebts.size})",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = if (!activeTabIsPending) BrandPrimary else TextSecondary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Debt items scrolling list
+        if (currentDebtsList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "🎉", fontSize = 52.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = if (activeTabIsPending) "جميع ديون الشلة مسددة بالكامل!\nالجميع متساوون وسعداء." else "لا يوجد سجل للديون المسواة حالياً.",
+                        textAlign = TextAlign.Center,
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(currentDebtsList) { debt ->
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(2.dp, RoundedCornerShape(20.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Row representing from/to names
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(BrandPrimary.copy(alpha = 0.08f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = debt.fromUser.take(1),
+                                            fontWeight = FontWeight.Bold,
+                                            color = BrandPrimary,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = debt.fromUser,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "⬅️ يدفع لـ", fontSize = 11.sp, color = TextSecondary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = debt.toUser,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                }
+
+                                Text(
+                                    text = "${String.format(Locale.US, "%,.0f", debt.amount)} جنيه",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = BrandPrimary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Details block
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(text = "الطلعة: ${debt.outingTitle}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+                                    Text(text = debt.dateString, fontSize = 10.sp, color = TextSecondary.copy(alpha = 0.7f))
+                                }
+
+                                if (activeTabIsPending) {
+                                    Button(
+                                        onClick = {
+                                            viewModel.settleDebt(
+                                                outingId = debt.outingId,
+                                                fromUser = debt.fromUser,
+                                                toUser = debt.toUser,
+                                                amount = debt.amount
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = SemanticGreen),
+                                        modifier = Modifier.testTag("global_settle_btn_${debt.fromUser}_${debt.toUser}")
+                                    ) {
+                                        Text(text = "تم التسوية", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                color = SemanticGreen.copy(alpha = 0.1f),
+                                                shape = RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(text = "تم السداد مسوّى", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SemanticGreen)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+    }
+}
+
+
+// -------------------------------------------------------------
+// SCREEN 6: STATISTICS AND REPORTS (الإحصائيات)
+// -------------------------------------------------------------
+data class PieSlice(val category: String, val percentage: Float, val count: Int, val color: Color)
+
+@Composable
+fun StatsReportsScreen(viewModel: HangBillViewModel) {
+    val outingsList by viewModel.outings.collectAsState()
+    val participantsList by viewModel.allParticipants.collectAsState()
+
+    // 1. Calculate overall metrics
+    val totalExpense = remember(participantsList) {
+        participantsList.sumOf { it.spendAmount }
+    }
+    val averageOutingVal = remember(outingsList, totalExpense) {
+        if (outingsList.isNotEmpty()) totalExpense / outingsList.size else 0.0
+    }
+
+    // 2. Count types of outings
+    val typeStats = remember(outingsList) {
+        val counts = mutableMapOf<String, Int>()
+        outingsList.forEach { counts[it.type] = (counts[it.type] ?: 0) + 1 }
+        val grandTotal = outingsList.size.toFloat()
+
+        listOf(
+            PieSlice("مطعم", if (grandTotal > 0) (counts["مطعم"] ?: 0) / grandTotal else 0f, counts["مطعم"] ?: 0, BrandPrimary),
+            PieSlice("سفر", if (grandTotal > 0) (counts["سفر"] ?: 0) / grandTotal else 0f, counts["سفر"] ?: 0, BrandSecondary),
+            PieSlice("ترفيه", if (grandTotal > 0) (counts["ترفيه"] ?: 0) / grandTotal else 0f, counts["ترفيه"] ?: 0, SemanticGreen),
+            PieSlice("آخر", if (grandTotal > 0) (((counts["كافيه"] ?: 0) + (counts["غيره"] ?: 0)) / grandTotal) else 0f, (counts["كافيه"] ?: 0) + (counts["غيره"] ?: 0), Color(0xFFF59E0B))
+        ).filter { it.count > 0 }
+    }
+
+    // 3. Spender Ranking lists
+    val spenderRankings = remember(participantsList) {
+        participantsList.groupBy { it.name }.mapValues { entry ->
+            entry.value.sumOf { it.spendAmount }
+        }.toList().sortedByDescending { it.second }
+    }
+
+    // 4. Most expensive outing
+    val mostExpensive = remember(outingsList, participantsList) {
+        outingsList.map { outing ->
+            val sum = participantsList.filter { it.outingId == outing.id }.sumOf { it.spendAmount }
+            outing to sum
+        }.maxByOrNull { it.second }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "التقارير والإحصائيات",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandPrimary
+                )
+            }
+        }
+
+        // Stats grid
+        item {
+            val brandGradient = Brush.linearGradient(
+                colors = listOf(BrandPrimary, BrandPrimaryGradientEnd)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .shadow(12.dp, RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(brandGradient)
+                    .padding(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "إجمالي المصروفات التاريخي للشلة", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = String.format(Locale.US, "%,.0f", totalExpense),
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "جنيه",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Sub stats grids (Outing count & Average)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Outing count card
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(96.dp)
+                        .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "عدد الطلعات", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "${outingsList.size}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "كامل التاريخ 📅", fontSize = 9.sp, color = TextSecondary)
+                    }
+                }
+
+                // Average spent card
+                Card(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(96.dp)
+                        .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "متوسط الطلعة", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${String.format(Locale.US, "%,.0f", averageOutingVal)} ج.م",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandSecondary
+                        )
+                        Text(text = "لكل طلعة 📈", fontSize = 9.sp, color = TextSecondary)
+                    }
+                }
+            }
+        }
+
+        // Custom drawn Doughnut Pie Chart mapping types
+        item {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(24.dp))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(text = "توزيع الطلعات والمصاريف حسب الفئة", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Custom vector arc doughnut drawings
+                        Box(
+                            modifier = Modifier.size(100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                var startAngle = -90f
+                                if (typeStats.isEmpty()) {
+                                    drawArc(
+                                        color = OutlineGrey.copy(alpha = 0.5f),
+                                        startAngle = 0f,
+                                        sweepAngle = 360f,
+                                        useCenter = false,
+                                        style = Stroke(width = 24f, cap = StrokeCap.Round)
+                                    )
+                                } else {
+                                    typeStats.forEach { slice ->
+                                        val sweep = slice.percentage * 360f
+                                        drawArc(
+                                            color = slice.color,
+                                            startAngle = startAngle,
+                                            sweepAngle = sweep,
+                                            useCenter = false,
+                                            style = Stroke(width = 24f, cap = StrokeCap.Round)
+                                        )
+                                        startAngle += sweep
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "${outingsList.size}\nطلعة",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandPrimary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        // Colors descriptions mapping indicators
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            typeStats.forEach { slice ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .background(slice.color, CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "${slice.category} (${String.format(Locale.US, "%.0f", slice.percentage * 100)}%)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Most Spending friends ranking list
+        item {
+            Text(text = "أكثر الأصدقاء إنفاقاً وسداداً", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        }
+
+        if (spenderRankings.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "لا توجد بيانات حالياً.", color = TextSecondary)
+                }
+            }
+        } else {
+            val maxSpent = spenderRankings.first().second
+            items(spenderRankings) { (name, total) ->
+                val progressVal = if (maxSpent > 0) (total / maxSpent).toFloat().coerceIn(0f, 1f) else 1f
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(2.dp, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(BrandPrimary.copy(alpha = 0.08f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = name.take(1), fontWeight = FontWeight.Bold, color = BrandPrimary)
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(text = name, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            }
+                            Text(
+                                text = "${String.format(Locale.US, "%,.0f", total)} جنيه",
+                                fontWeight = FontWeight.Bold,
+                                color = BrandPrimary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        LinearProgressIndicator(
+                            progress = { progressVal },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = BrandPrimary,
+                            trackColor = OutlineGrey.copy(alpha = 0.3f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "مساهمة: ${String.format(Locale.US, "%.0f", progressVal * 100)}% من طليعة الإنفاق الأعلى", fontSize = 10.sp, color = TextSecondary)
+                    }
+                }
+            }
+        }
+
+        // Highlight card representation for Most expensive outing ("أغلى طلعة")
+        item {
+            Text(text = "أغلى طلعة تاريخياً", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        }
+
+        if (mostExpensive != null) {
+            item {
+                val (outing, cost) = mostExpensive
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceLowest),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(24.dp))
+                ) {
+                    Column {
+                        // Drawing visual top header backdrop using code representation of beautiful liquid accent
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(BrandPrimary, BrandSecondary)
+                                    )
+                                )
+                                .padding(16.dp),
+                            contentAlignment = Alignment.BottomStart
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.25f), RoundedCornerShape(50.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "📌 أغلى طلعة",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        // Content details
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(text = outing.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "📅 ${outing.date}", fontSize = 11.sp, color = TextSecondary)
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "${String.format(Locale.US, "%,.0f", cost)}",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandPrimary
+                                )
+                                Text(text = "جنيه مصري", fontSize = 9.sp, color = TextSecondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "HangBill",
+  "description": "تطبيق متكامل لتتبع وتقسيم مصاريف طلعات الأصدقاء وتصفير الديون بكل سلاسة وبساطة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

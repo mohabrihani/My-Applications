@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Main base card -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,30h38c2.2,0 4,1.8 4,4v40c0,2.2 -1.8,4 -4,4h-38c-2.2,0 -4,-1.8 -4,-4v-40c0,-2.2 1.8,-4 4,-4z" />
+    <!-- Overlapping receipt check lines inside base card -->
+    <path
+        android:fillColor="#6C3FC7"
+        android:pathData="M40,40h28v4h-28z M40,48h20v4h-20z M40,56h24v4h-24z" />
+    <!-- Side pocket wallet shape -->
+    <path
+        android:fillColor="#E2E8F8"
+        android:pathData="M48,52h26c1.1,0 2,0.9 2,2v18c0,1.1 -0.9,2 -2,2h-26c-1.1,0 -2,-0.9 -2,-2v-18c0,-1.1 0.9,-2 2,-2z" />
+    <!-- Wallet details: coin symbol -->
+    <path
+        android:fillColor="#2170E4"
+        android:pathData="M61,63m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>
